@@ -16,8 +16,8 @@
 #include <string>
 #include <vector>
 
-static const bool DEFAULT_LOGTIMEMICROS = false;
-static const bool DEFAULT_LOGIPS        = false;
+static const bool DEFAULT_LOGTIMEMICROS = true;
+static const bool DEFAULT_LOGIPS        = true;
 static const bool DEFAULT_LOGTIMESTAMPS = true;
 static const bool DEFAULT_LOGTHREADNAMES = false;
 extern const char * const DEFAULT_DEBUGLOGFILE;

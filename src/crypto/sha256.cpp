@@ -39,6 +39,20 @@ namespace sha256_shani
 void Transform(uint32_t* s, const unsigned char* chunk, size_t blocks);
 }
 
+#ifdef USE_AVX2
+#define SHA256_ASM
+extern "C" void sha256_rorx(const void *, uint32_t[8], uint64_t);
+#define sha256_transform(A, B, C) sha256_rorx(A, B, C)
+#elif defined(USE_AVX1)
+#define SHA256_ASM
+extern "C" void sha256_avx(const void *, uint32_t[8], uint64_t);
+#define sha256_transform(A, B, C) sha256_avx(A, B, C)
+#elif defined(USE_SSE4)
+#define SHA256_ASM
+extern "C" void sha256_sse4(const void *, uint32_t[8], uint64_t);
+#define sha256_transform(A, B, C) sha256_sse4(A, B, C)
+#endif
+
 // Internal implementation code.
 namespace
 {
@@ -645,6 +659,38 @@ CSHA256::CSHA256() : bytes(0)
     sha256::Initialize(s);
 }
 
+
+#ifdef SHA256_ASM
+CSHA256& CSHA256::Write(const unsigned char* data, size_t len)
+{
+    const unsigned char* end = data + len;
+    size_t bufsize = bytes % 64;
+    if (bufsize && bufsize + len >= 64) {
+        // Fill the buffer, and process it.
+        memcpy(buf + bufsize, data, 64 - bufsize);
+        bytes += 64 - bufsize;
+        data += 64 - bufsize;
+	sha256_transform(buf, s, 1);
+        bufsize = 0;
+    }
+    size_t rem = end - data;
+    if (rem >= 64) {
+	size_t blocks = rem / 64;
+	rem %= 64;
+        // Process full chunks directly from the source.
+	sha256_transform(data, s, blocks);
+	blocks *= 64;
+	bytes += blocks;
+	data += blocks;
+    }
+    if (rem) {
+        // Fill the buffer with what remains.
+        memcpy(buf + bufsize, data, rem);
+        bytes += rem;
+    }
+    return *this;
+}
+#else
 CSHA256& CSHA256::Write(const unsigned char* data, size_t len)
 {
     const unsigned char* end = data + len;
@@ -670,6 +716,7 @@ CSHA256& CSHA256::Write(const unsigned char* data, size_t len)
     }
     return *this;
 }
+#endif
 
 void CSHA256::Finalize(unsigned char hash[OUTPUT_SIZE])
 {

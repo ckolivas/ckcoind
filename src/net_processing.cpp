@@ -2646,6 +2646,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return true;
         }
 
+	LogPrintf("CMPCTBLOCK message\n");
         CBlockHeaderAndShortTxIDs cmpctblock;
         vRecv >> cmpctblock;
 
@@ -2843,6 +2844,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             ProcessNewBlock(chainparams, pblock, /*fForceProcessing=*/true, &fNewBlock);
             if (fNewBlock) {
                 pfrom->nLastBlockTime = GetTime();
+		LogPrintf("Block %s provided by %s\n", pblock->GetHash().ToString(), pfrom->addr.ToString());
             } else {
                 LOCK(cs_main);
                 mapBlockSource.erase(pblock->GetHash());
@@ -2867,6 +2869,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             return true;
         }
 
+	LogPrintf("BLOCKTXN message\n");
         BlockTransactions resp;
         vRecv >> resp;
 
@@ -2932,6 +2935,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             ProcessNewBlock(chainparams, pblock, /*fForceProcessing=*/true, &fNewBlock);
             if (fNewBlock) {
                 pfrom->nLastBlockTime = GetTime();
+		LogPrintf("Block %s provided by %s\n", resp.blockhash.ToString(), pfrom->addr.ToString());
             } else {
                 LOCK(cs_main);
                 mapBlockSource.erase(pblock->GetHash());
@@ -2973,6 +2977,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             LogPrint(BCLog::NET, "Unexpected block message received from peer %d\n", pfrom->GetId());
             return true;
         }
+	LogPrintf("BLOCK message\n");
 
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
         vRecv >> *pblock;
@@ -2994,6 +2999,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         ProcessNewBlock(chainparams, pblock, forceProcessing, &fNewBlock);
         if (fNewBlock) {
             pfrom->nLastBlockTime = GetTime();
+	    LogPrintf("Block %s provided by %s\n", pblock->GetHash().ToString(), pfrom->addr.ToString());
         } else {
             LOCK(cs_main);
             mapBlockSource.erase(pblock->GetHash());

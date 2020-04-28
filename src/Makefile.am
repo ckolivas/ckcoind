@@ -313,6 +313,8 @@ if !ENABLE_WALLET
 libbitcoin_server_a_SOURCES += dummywallet.cpp
 endif
 
+libbitcoin_cli_a_LIBADD = $(native_objs)
+
 if ENABLE_ZMQ
 libbitcoin_zmq_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES) $(ZMQ_CFLAGS)
 libbitcoin_zmq_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
@@ -526,6 +528,8 @@ libbitcoin_cli_a_SOURCES = \
 nodist_libbitcoin_util_a_SOURCES = $(srcdir)/obj/build.h
 #
 
+RELDFLAGS += $(native_objs)
+
 # bitcoind binary #
 bitcoind_SOURCES = bitcoind.cpp
 bitcoind_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
@@ -700,6 +704,21 @@ if ENABLE_BIP70
 	@test -f $(PROTOC)
 	$(AM_V_GEN) $(PROTOC) --cpp_out=$(@D) --proto_path=$(<D) $<
 endif
+
+native_objs :=
+
+if HAVE_AVX2
+native_objs += crypto/sha256_code_release/sha256_avx2_rorx2.A
+endif
+if HAVE_AVX1
+native_objs += crypto/sha256_code_release/sha256_avx1.A
+endif
+if HAVE_SSE4
+native_objs += crypto/sha256_code_release/sha256_sse4.A
+endif
+
+%.A: %.asm
+	yasm -f x64 -f elf64 -X gnu -g dwarf2 -D LINUX -o $@ $<
 
 if EMBEDDED_LEVELDB
 include Makefile.leveldb.include

@@ -698,6 +698,7 @@ static UniValue submitblock(const JSONRPCRequest& request)
                 },
             }.Check(request);
 
+    LogPrintf("SUBMITBLOCK!\n");
     std::shared_ptr<CBlock> blockptr = std::make_shared<CBlock>();
     CBlock& block = *blockptr;
     if (!DecodeHexBlk(block, request.params[0].get_str())) {

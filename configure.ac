@@ -1540,6 +1540,35 @@ if test x$build_bitcoin_wallet$build_bitcoin_cli$build_bitcoin_tx$build_bitcoin_
   AC_MSG_ERROR([No targets! Please specify at least one of: --with-utils --with-libs --with-daemon --with-gui --enable-bench or --enable-tests])
 fi
 
+AC_CHECK_PROG(YASM, yasm, yes)
+AM_CONDITIONAL([HAVE_YASM], [test x$YASM = xyes])
+
+rorx=
+avx1=
+sse4=
+if test x$YASM = xyes; then
+	rorx=`cat /proc/cpuinfo | grep -o -m 1 avx2`
+	if [test x$rorx != xavx2]; then
+		avx1=`cat /proc/cpuinfo | grep -o -m 1 avx`
+		if [test x$avx1 != xavx]; then
+			sse4=`cat /proc/cpuinfo | grep -o -m 1 sse4_1`
+		fi
+	fi
+fi
+AM_CONDITIONAL([HAVE_AVX2], [test x$rorx = xavx2])
+AM_CONDITIONAL([HAVE_AVX1], [test x$avx1 = xavx])
+AM_CONDITIONAL([HAVE_SSE4], [test x$sse4 = xsse4_1])
+if test x$rorx = xavx2; then
+	AC_DEFINE([USE_AVX2], [1], [Use avx2 assembly instructions for sha256])
+fi
+if test x$avx1 = xavx; then
+	AC_DEFINE([USE_AVX1], [1], [Use avx1 assembly instructions for sha256])
+fi
+if test x$sse4 = xsse4_1; then
+	AC_DEFINE([USE_SSE4], [1], [Use sse4 assembly instructions for sha256])
+fi
+
+
 AM_CONDITIONAL([TARGET_DARWIN], [test x$TARGET_OS = xdarwin])
 AM_CONDITIONAL([BUILD_DARWIN], [test x$BUILD_OS = xdarwin])
 AM_CONDITIONAL([TARGET_WINDOWS], [test x$TARGET_OS = xwindows])
