@@ -447,6 +447,18 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool fCo
     CAddress addr_bind = GetBindAddress(hSocket);
     CNode* pnode = new CNode(id, nLocalServices, GetBestHeight(), hSocket, addrConnect, CalculateKeyedNetGroup(addrConnect), nonce, addr_bind, pszDest ? pszDest : "", false, block_relay_only);
     pnode->AddRef();
+    NetPermissionFlags permissionFlags = NetPermissionFlags::PF_NONE;
+    AddWhitelistPermissionFlags(permissionFlags, addrConnect);
+
+    if (NetPermissions::HasFlag(permissionFlags, NetPermissionFlags::PF_ISIMPLICIT)) {
+        NetPermissions::ClearFlag(permissionFlags, PF_ISIMPLICIT);
+        if (gArgs.GetBoolArg("-whitelistforcerelay", DEFAULT_WHITELISTFORCERELAY)) NetPermissions::AddFlag(permissionFlags, PF_FORCERELAY);
+        if (gArgs.GetBoolArg("-whitelistrelay", DEFAULT_WHITELISTRELAY)) NetPermissions::AddFlag(permissionFlags, PF_RELAY);
+        NetPermissions::AddFlag(permissionFlags, PF_MEMPOOL);
+        NetPermissions::AddFlag(permissionFlags, PF_NOBAN);
+        pnode->m_legacyWhitelisted = true;
+	LogPrintf("Whitelisted outgoing peer %s\n", addrConnect.ToString());
+    }
 
     return pnode;
 }
@@ -927,6 +939,7 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
         NetPermissions::AddFlag(permissionFlags, PF_MEMPOOL);
         NetPermissions::AddFlag(permissionFlags, PF_NOBAN);
         legacyWhitelisted = true;
+	LogPrintf("Whitelisted incoming peer %s\n", addr.ToString());
     }
 
     {
