@@ -1979,26 +1979,6 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
         if (!vRecv.empty())
             vRecv >> fRelay;
 
-	std::string remoteAddr;
-        if (fLogIPs)
-            remoteAddr = ", peeraddr=" + pfrom->addr.ToString();
-
-	if ((!pfrom->m_legacyWhitelisted) &&
-            (remoteAddr.find("127.0.0.1")==std::string::npos) &&
-	    (remoteAddr.find("192.168.1.")==std::string::npos) &&
-	    (remoteAddr.find("[::]")==std::string::npos) &&
-	    (nStartingHeight > 0 && nStartingHeight < ChainActive().Tip()->nHeight - 120)) {
-            // disconnect from peers too far behind that are wanting seeding
-		LogPrintf("Banning behind node version message: %s: version %d, blocks=%d, peer=%d%s\n",
-                  pfrom->cleanSubVer, pfrom->nVersion,
-                  nStartingHeight, pfrom->id,
-                  remoteAddr);
-            pfrom->fDisconnect = true;
-            if (g_banman)
-		   g_banman->Ban(pfrom->addr, BanReasonManuallyAdded);
-            return true;
-	}
-
         // Disconnect if we connected to ourself
         if (pfrom->fInbound && !connman->CheckIncomingNonce(nNonce))
         {
@@ -2079,6 +2059,11 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             }
             connman->MarkAddressGood(pfrom->addr);
         }
+
+        std::string remoteAddr;
+        if (fLogIPs)
+            remoteAddr = ", peeraddr=" + pfrom->addr.ToString();
+
 
         LogPrint(BCLog::NET, "receive version message: %s: version %d, blocks=%d, us=%s, peer=%d%s\n",
                   cleanSubVer, pfrom->nVersion,
