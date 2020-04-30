@@ -1987,13 +1987,15 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
             (remoteAddr.find("127.0.0.1")==std::string::npos) &&
 	    (remoteAddr.find("192.168.1.")==std::string::npos) &&
 	    (remoteAddr.find("[::]")==std::string::npos) &&
-	    (pfrom->nStartingHeight > 0 && pfrom->nStartingHeight < ChainActive().Tip()->nHeight - 120)) {
+	    (nStartingHeight > 0 && nStartingHeight < ChainActive().Tip()->nHeight - 120)) {
             // disconnect from peers too far behind that are wanting seeding
-		LogPrintf("Disconnecting behind version message: %s: version %d, blocks=%d, peer=%d%s\n",
+		LogPrintf("Banning behind node version message: %s: version %d, blocks=%d, peer=%d%s\n",
                   pfrom->cleanSubVer, pfrom->nVersion,
-                  pfrom->nStartingHeight, pfrom->id,
+                  nStartingHeight, pfrom->id,
                   remoteAddr);
             pfrom->fDisconnect = true;
+            if (g_banman)
+		   g_banman->Ban(pfrom->addr, BanReasonManuallyAdded);
             return true;
 	}
 
