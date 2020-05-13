@@ -2110,11 +2110,7 @@ bool static ProcessMessage(CNode* pfrom, const std::string& strCommand, CDataStr
                       pfrom->nVersion.load(), pfrom->nStartingHeight,
                       pfrom->GetId(), (fLogIPs ? strprintf(", peeraddr=%s", pfrom->addr.ToString()) : ""),
                       pfrom->m_tx_relay == nullptr ? "block-relay" : "full-relay");
-        } else
-            LogPrintf("New inbound peer connected: version: %d, blocks=%d, peer=%d%s (%s)\n",
-                      pfrom->nVersion.load(), pfrom->nStartingHeight,
-                      pfrom->GetId(), (fLogIPs ? strprintf(", peeraddr=%s", pfrom->addr.ToString()) : ""),
-                      pfrom->m_tx_relay == nullptr ? "block-relay" : "full-relay");
+        }
 
         if (pfrom->nVersion >= SENDHEADERS_VERSION) {
             // Tell our peer we prefer to receive headers rather than inv's
