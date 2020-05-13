@@ -800,9 +800,8 @@ public:
     CNode(const CNode&) = delete;
     CNode& operator=(const CNode&) = delete;
 
-    const NodeId id;
-
 private:
+    const NodeId id;
     const uint64_t nLocalHostNonce;
 
     //! Services offered to this peer.
