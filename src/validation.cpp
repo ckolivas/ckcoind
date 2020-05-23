@@ -3230,6 +3230,31 @@ static bool FindBlockPos(FlatFilePos &pos, unsigned int nAddSize, unsigned int n
     return true;
 }
 
+#define EST_UNDOFILE_SIZE 0x1300000
+
+static void ReserveBlockSpace(void)
+{
+	static unsigned int nFile = 0;
+	FlatFilePos pos;
+	LOCK(cs_LastBlockFile);
+
+	if (nFile > nLastBlockFile)
+		return;
+	nFile = nLastBlockFile + 1;
+
+	pos.nFile = nFile;
+	pos.nPos = 0;
+
+	bool out_of_space;
+	size_t bytes_allocated = BlockFileSeq().Allocate(pos, MAX_BLOCKFILE_SIZE, out_of_space);
+	if (out_of_space)
+		AbortNode("Disk space is too low!", _("Error: Disk space is too low!").translated, CClientUIInterface::MSG_NOPREFIX);
+	bytes_allocated += UndoFileSeq().Allocate(pos, EST_UNDOFILE_SIZE, out_of_space);
+	if (out_of_space)
+		AbortNode("Disk space is too low!", _("Error: Disk space is too low!").translated, CClientUIInterface::MSG_NOPREFIX);
+	LogPrintf("Reserved %d bytes for block files!\n", bytes_allocated);
+}
+
 static bool FindUndoPos(CValidationState &state, int nFile, FlatFilePos &pos, unsigned int nAddSize)
 {
     pos.nFile = nFile;
@@ -3783,6 +3808,8 @@ static bool _ProcessNewBlock(const CChainParams& chainparams, const std::shared_
     CValidationState state; // Only used to report errors, not invalidity - ignore it
     if (!::ChainstateActive().ActivateBestChain(state, chainparams, pblock))
         return error("%s: ActivateBestChain failed (%s)", __func__, FormatStateMessage(state));
+
+    ReserveBlockSpace();
 
     return true;
 }
