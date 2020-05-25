@@ -735,7 +735,12 @@ static UniValue submitblock(const JSONRPCRequest& request)
     bool new_block;
     submitblock_StateCatcher sc(block.GetHash());
     RegisterValidationInterface(&sc);
-    bool accepted = ProcessMinedBlock(Params(), blockptr, /* fForceProcessing */ true, /* fNewBlock */ &new_block);
+    if (gArgs.GetBoolArg("-processlowdiff", false)) {
+	LogPrintf("PROCESSING LOW DIFF MINED BLOCK!\n");
+	block.LowDiff = true;
+    }
+
+    bool accepted = ProcessNewBlock(Params(), blockptr, /* fForceProcessing */ true, /* fNewBlock */ &new_block);
     UnregisterValidationInterface(&sc);
     if (!new_block && accepted) {
         return "duplicate";

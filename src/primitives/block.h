@@ -27,6 +27,8 @@ public:
     uint32_t nTime;
     uint32_t nBits;
     uint32_t nNonce;
+    // Accept lowdiff mined blocks
+    mutable bool LowDiff;
 
     CBlockHeader()
     {
@@ -53,6 +55,7 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
+	LowDiff = false;
     }
 
     bool IsNull() const

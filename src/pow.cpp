@@ -9,7 +9,6 @@
 #include <chain.h>
 #include <primitives/block.h>
 #include <uint256.h>
-#include <util/system.h>
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
@@ -85,12 +84,8 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
         return false;
 
     // Check proof of work matches claimed amount
-    if (UintToArith256(hash) > bnTarget) {
-	    if (gArgs.GetBoolArg("-processlowdiff", false))
-		    LogPrintf("PROCESSING LOW DIFF BLOCK!\n");
-	    else
-		return false;
-    }
+    if (UintToArith256(hash) > bnTarget)
+	return false;
 
     return true;
 }

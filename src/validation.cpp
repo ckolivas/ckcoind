@@ -3279,9 +3279,16 @@ static bool FindUndoPos(CValidationState &state, int nFile, FlatFilePos &pos, un
 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
-    // Check proof of work matches claimed amount
-    if (fCheckPOW && !CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
-        return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "high-hash", "proof of work failed");
+     // Check proof of work matches claimed amount
+    if (fCheckPOW) {
+	    if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams)) {
+	        if (block.LowDiff)
+			LogPrintf("Failed ProofOfWork check but forcing due to LowDiff!\n");
+		else
+		        return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_INVALID, "high-hash", "proof of work failed");
+	    } else
+		    block.LowDiff = false;
+    }
 
     return true;
 }
@@ -3347,6 +3354,8 @@ bool CheckBlock(const CBlock& block, CValidationState& state, const Consensus::P
     if (fCheckPOW && fCheckMerkleRoot)
         block.fChecked = true;
 
+    if (block.LowDiff)
+	    LogPrintf("Passed CheckBlock with LowDiff\n");
     return true;
 }
 
@@ -3471,7 +3480,9 @@ static bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationSta
             return state.Invalid(ValidationInvalidReason::BLOCK_INVALID_HEADER, false, REJECT_OBSOLETE, strprintf("bad-version(0x%08x)", block.nVersion),
                                  strprintf("rejected nVersion=0x%08x block", block.nVersion));
 
-    return true;
+     if (block.LowDiff)
+	    LogPrintf("Passed ContextualCheckBlockHeader with LowDiff\n");
+   return true;
 }
 
 /** NOTE: This function is not currently invoked by ConnectBlock(), so we
@@ -3559,6 +3570,8 @@ static bool ContextualCheckBlock(const CBlock& block, CValidationState& state, c
         return state.Invalid(ValidationInvalidReason::CONSENSUS, false, REJECT_INVALID, "bad-blk-weight", strprintf("%s : weight limit failed", __func__));
     }
 
+    if (block.LowDiff)
+	    LogPrintf("Passed ContextualCheckBlock with LowDiff\n");
     return true;
 }
 
@@ -3688,12 +3701,21 @@ static FlatFilePos SaveBlockToDisk(const CBlock& block, int nHeight, const CChai
     return blockPos;
 }
 
+static bool ForcedLowDiff(const CBlockHeader& block, CValidationState& state, CBlockIndex* pindex)
+{
+	if (block.LowDiff) {
+		LogPrintf("AcceptBlock Successfully Processed LowDiff block but ABORTING to avoid corrupt blockchain\n");
+		exit(1);
+	}
+	return false;
+}
+
 /** Store block on disk. If dbp is non-nullptr, the file is known to already reside on disk */
 bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidationState& state, const CChainParams& chainparams, CBlockIndex** ppindex, bool fRequested, const FlatFilePos* dbp, bool* fNewBlock)
 {
     const CBlock& block = *pblock;
 
-    //if (fNewBlock) *fNewBlock = false;
+    if (fNewBlock) *fNewBlock = false;
     AssertLockHeld(cs_main);
 
     CBlockIndex *pindexDummy = nullptr;
@@ -3738,16 +3760,15 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     }
 
     if (!CheckBlock(block, state, chainparams.GetConsensus()) ||
-        !ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindex->pprev)) {
-        assert(IsBlockReason(state.GetReason()));
+        !ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindex->pprev) ||
+        ForcedLowDiff(block, state, pindex)) {
+       assert(IsBlockReason(state.GetReason()));
         if (state.IsInvalid() && state.GetReason() != ValidationInvalidReason::BLOCK_MUTATED) {
             pindex->nStatus |= BLOCK_FAILED_VALID;
             setDirtyBlockIndex.insert(pindex);
         }
         return error("%s: %s", __func__, FormatStateMessage(state));
     }
-    if (fNewBlock && *fNewBlock)
-	    return error("AcceptBlock ABORTED for ProcessLowDiff");
 
     // Header is valid/has work, merkle tree and segwit merkle tree are good...RELAY NOW
     // (but if it does not build on our best tip, let the SendMessages loop relay it)
@@ -3774,7 +3795,7 @@ bool CChainState::AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CVali
     return true;
 }
 
-static bool _ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock, bool mined)
+bool ProcessNewBlock(const CChainParams& chainparams, std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
 {
     AssertLockNotHeld(cs_main);
 
@@ -3790,8 +3811,6 @@ static bool _ProcessNewBlock(const CChainParams& chainparams, const std::shared_
         // Ensure that CheckBlock() passes before calling AcceptBlock, as
         // belt-and-suspenders.
         bool ret = CheckBlock(*pblock, state, chainparams.GetConsensus());
-	if (fNewBlock && mined && (gArgs.GetBoolArg("-processlowdiff", false)))
-		*fNewBlock = true;
 
         if (ret) {
             // Store to disk
@@ -3812,18 +3831,6 @@ static bool _ProcessNewBlock(const CChainParams& chainparams, const std::shared_
     ReserveBlockSpace();
 
     return true;
-}
-
-bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
-{
-	return _ProcessNewBlock(chainparams, pblock, fForceProcessing, fNewBlock, false);
-
-}
-
-bool ProcessMinedBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock> pblock, bool fForceProcessing, bool *fNewBlock)
-{
-	return _ProcessNewBlock(chainparams, pblock, fForceProcessing, fNewBlock, true);
-
 }
 
 bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOW, bool fCheckMerkleRoot)
