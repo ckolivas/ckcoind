@@ -1520,7 +1520,14 @@ void PeerManagerImpl::PushNodeVersion(CNode& pnode, const Peer& peer)
     uint64_t your_services{addr.nServices};
 
     const bool tx_relay{!RejectIncomingTxs(pnode)};
-    MakeAndPushMessage(pnode, NetMsgType::VERSION, PROTOCOL_VERSION, my_services, nTime,
+
+    // Only provide full NODE_NETWORK to whitelisted Download peers
+    uint64_t nServices = my_services;
+    if (!pnode.HasPermission(NetPermissionFlags::Download))
+        nServices &= ~((uint64_t)NODE_NETWORK);
+    else
+        LogPrintf("Whitelisted incoming Download peer %s\n", addr.ToStringAddrPort());
+    MakeAndPushMessage(pnode, NetMsgType::VERSION, PROTOCOL_VERSION, nServices, nTime,
             your_services, CNetAddr::V1(addr_you), // Together the pre-version-31402 serialization of CAddress "addrYou" (without nTime)
             my_services, CNetAddr::V1(CService{}), // Together the pre-version-31402 serialization of CAddress "addrMe" (without nTime)
             nonce, strSubVersion, nNodeStartingHeight, tx_relay);
@@ -4408,6 +4415,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             return;
         }
 
+        LogPrintf("CMPCTBLOCK message\n");
         CBlockHeaderAndShortTxIDs cmpctblock;
         vRecv >> cmpctblock;
 
@@ -4714,6 +4722,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             return;
         }
 
+        LogPrintf("BLOCK message\n");
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
         vRecv >> TX_WITH_WITNESS(*pblock);
 
