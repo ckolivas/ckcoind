@@ -801,7 +801,8 @@ static RPCHelpMan getblocktemplate()
     static CBlockIndex* pindexPrev;
     static int64_t time_start;
     static std::unique_ptr<CBlockTemplate> pblocktemplate;
-    if (!pindexPrev || pindexPrev->GetBlockHash() != tip ||
+    bool BlockChange = false;
+    if (!pindexPrev || (BlockChange = (pindexPrev->GetBlockHash() != tip)) ||
         (miner.getTransactionsUpdated() != nTransactionsUpdatedLast && GetTime() - time_start > 5))
     {
         // Clear pindexPrev so future calls make a new block, despite any failures from here on
@@ -814,7 +815,7 @@ static RPCHelpMan getblocktemplate()
 
         // Create new block
         CScript scriptDummy = CScript() << OP_TRUE;
-        pblocktemplate = miner.createNewBlock(scriptDummy);
+        pblocktemplate = miner.createNewBlock(scriptDummy, {.block_change = BlockChange});
         if (!pblocktemplate) {
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
         }
