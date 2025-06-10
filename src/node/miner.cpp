@@ -109,6 +109,8 @@ void BlockAssembler::resetBlock()
     // Reserve space for fixed-size block header, txs count, and coinbase tx.
     nBlockWeight = m_options.block_reserved_weight;
     nBlockSigOpsCost = m_options.coinbase_output_max_additional_sigops;
+    // CKCoinD
+    NewBlock = m_options.block_change;
 
     // These counters do not include coinbase tx
     nBlockTx = 0;
@@ -167,7 +169,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
     pblocktemplate->vchCoinbaseCommitment = m_chainstate.m_chainman.GenerateCoinbaseCommitment(*pblock, pindexPrev);
     pblocktemplate->vTxFees[0] = -nFees;
 
-    LogPrintf("CreateNewBlock(): block weight: %u txs: %u fees: %ld sigops %d\n", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
+    LogPrintf("CreateNewBlock(%s): block weight: %u txs: %u fees: %ld sigops %d\n", m_options.block_change ? "BlockChange" : "", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
 
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
@@ -391,6 +393,10 @@ void BlockAssembler::addPackageTxs(int& nPackagesSelected, int& nDescendantsUpda
                 mapModifiedTx.get<ancestor_score>().erase(modit);
                 failedTx.insert(iter->GetSharedTx()->GetHash());
             }
+
+            // CKCoinD Drop out on first failure on a new block for fast block assembly
+            if (NewBlock)
+                break;
 
             ++nConsecutiveFailed;
 
