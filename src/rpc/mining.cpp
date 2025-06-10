@@ -859,7 +859,8 @@ static RPCHelpMan getblocktemplate()
     static CBlockIndex* pindexPrev;
     static int64_t time_start;
     static std::unique_ptr<BlockTemplate> block_template;
-    if (!pindexPrev || pindexPrev->GetBlockHash() != tip ||
+    bool BlockChange = false;
+    if (!pindexPrev || (BlockChange = (pindexPrev->GetBlockHash() != tip)) ||
         (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLast && GetTime() - time_start > 5))
     {
         // Clear pindexPrev so future calls make a new block, despite any failures from here on
@@ -873,8 +874,10 @@ static RPCHelpMan getblocktemplate()
         // Create new block. Opt-out of cooldown mechanism, because it would add
         // a delay to each getblocktemplate call. This differs from typical
         // long-lived IPC usage, where the overhead is paid only when creating
-        // the initial template.
-        block_template = miner.createNewBlock({.include_dummy_extranonce = true}, /*cooldown=*/false);
+        // the initial template. Pass block_change so CreateNewBlock can take
+        // the fast path (early exit after first chunk) on tip changes for
+        // ckpool/ZMQ low-latency use.
+        block_template = miner.createNewBlock({.block_change = BlockChange, .include_dummy_extranonce = true}, /*cooldown=*/false);
         CHECK_NONFATAL(block_template);
 
 

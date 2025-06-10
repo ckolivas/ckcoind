@@ -104,7 +104,7 @@ option(BUILD_DAEMON "Build bitcoind executable." ON)
 option(BUILD_GUI "Build bitcoin-qt executable." OFF)
 option(BUILD_CLI "Build bitcoin-cli executable." ON)
 
-option(BUILD_TESTS "Build test_bitcoin and other unit test executables." ON)
+option(BUILD_TESTS "Build test_bitcoin and other unit test executables." OFF)
 option(BUILD_TX "Build bitcoin-tx executable." ${BUILD_TESTS})
 option(BUILD_UTIL "Build bitcoin-util executable." ${BUILD_TESTS})
 
@@ -112,8 +112,9 @@ option(BUILD_UTIL_CHAINSTATE "Build experimental bitcoin-chainstate executable."
 option(BUILD_KERNEL_LIB "Build experimental bitcoinkernel library." ${BUILD_UTIL_CHAINSTATE})
 cmake_dependent_option(BUILD_KERNEL_TEST "Build tests for the experimental bitcoinkernel library." ON "BUILD_KERNEL_LIB" OFF)
 
-option(ENABLE_WALLET "Enable wallet." ON)
-if(ENABLE_WALLET)
+option(ENABLE_WALLET "Enable wallet." OFF)
+option(WITH_SQLITE "Enable SQLite wallet support." ${ENABLE_WALLET})
+if(WITH_SQLITE)
   if(VCPKG_TARGET_TRIPLET)
     # Use of the `unofficial::` namespace is a vcpkg package manager convention.
     find_package(unofficial-sqlite3 CONFIG REQUIRED)
@@ -131,7 +132,7 @@ option(REDUCE_EXPORTS "Attempt to reduce exported symbols in the resulting execu
 option(CMAKE_COMPILE_WARNING_AS_ERROR "Treat compiler warnings as errors." OFF)
 option(WITH_CCACHE "Attempt to use ccache for compiling." ON)
 
-option(WITH_ZMQ "Enable ZMQ notifications." OFF)
+option(WITH_ZMQ "Enable ZMQ notifications." ON)
 if(WITH_ZMQ)
   find_package(ZeroMQ 4.0.0 MODULE REQUIRED)
 endif()

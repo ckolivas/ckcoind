@@ -7,6 +7,7 @@
 #define BITCOIN_NET_PROCESSING_H
 
 #include <consensus/amount.h>
+#include <logging.h>
 #include <net.h>
 #include <node/txorphanage.h>
 #include <private_broadcast.h>
@@ -41,7 +42,7 @@ class Warnings;
 static constexpr bool DEFAULT_TXRECONCILIATION_ENABLE{false};
 /** Default number of non-mempool transactions to keep around for block reconstruction. Includes
     orphan, replaced, and rejected transactions. */
-static const uint32_t DEFAULT_BLOCK_RECONSTRUCTION_EXTRA_TXN{100};
+static const uint32_t DEFAULT_BLOCK_RECONSTRUCTION_EXTRA_TXN{1000};
 static const bool DEFAULT_PEERBLOOMFILTERS = false;
 static const bool DEFAULT_PEERBLOCKFILTERS = false;
 /** Maximum number of outstanding CMPCTBLOCK requests for the same block. */

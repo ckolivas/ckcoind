@@ -113,6 +113,8 @@ void BlockAssembler::resetBlock()
     // Reserve space for fixed-size block header, txs count, and coinbase tx.
     nBlockWeight = *Assert(m_options.block_reserved_weight);
     nBlockSigOpsCost = m_options.coinbase_output_max_additional_sigops;
+    // CKCoinD
+    NewBlock = m_options.block_change;
 
     // These counters do not include coinbase tx
     nBlockTx = 0;
@@ -212,7 +214,9 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock()
         coinbase_tx.required_outputs.push_back(final_coinbase->vout[witness_index]);
     }
 
-    LogInfo("CreateNewBlock(): block weight: %u txs: %u fees: %ld sigops %d\n", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
+    LogInfo("CreateNewBlock(%s): block weight: %u txs: %u fees: %ld sigops %d\n",
+            m_options.block_change ? "BlockChange" : "",
+            GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
 
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
@@ -282,6 +286,8 @@ void BlockAssembler::addChunks()
     // close to full; this is just a simple heuristic to finish quickly if the
     // mempool has a lot of entries.
     const int64_t MAX_CONSECUTIVE_FAILURES = 1000;
+    const int64_t max_consecutive_failures = NewBlock ? 0 : MAX_CONSECUTIVE_FAILURES;
+
     constexpr int32_t BLOCK_FULL_ENOUGH_WEIGHT_DELTA = 4000;
     int64_t nConsecutiveFailed = 0;
 
@@ -307,13 +313,14 @@ void BlockAssembler::addChunks()
 
         // Check to see if this chunk will fit.
         if (!TestChunkBlockLimits(chunk_feerate, chunk_sig_ops) || !TestChunkTransactions(selected_transactions)) {
-            // This chunk won't fit, so we skip it and will try the next best one.
+            // This chunk won't fit.
             m_mempool->SkipBuilderChunk();
             ++nConsecutiveFailed;
 
-            if (nConsecutiveFailed > MAX_CONSECUTIVE_FAILURES && nBlockWeight +
-                    BLOCK_FULL_ENOUGH_WEIGHT_DELTA > m_options.nBlockMaxWeight) {
-                // Give up if we're close to full and haven't succeeded in a while
+            if (nConsecutiveFailed > max_consecutive_failures &&
+                (NewBlock || (nBlockWeight + BLOCK_FULL_ENOUGH_WEIGHT_DELTA > m_options.nBlockMaxWeight))) {
+                // For NewBlock (BlockChange) mode we want to stop on the very first unsuitable chunk.
+                // For normal mode we use the more patient heuristic.
                 return;
             }
         } else {
