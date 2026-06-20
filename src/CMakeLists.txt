@@ -167,6 +167,7 @@ if(ENABLE_WALLET)
       bitcoin_common
       bitcoin_util
       Boost::headers
+      $<TARGET_NAME_IF_EXISTS:Jemalloc::Jemalloc>
     )
     install_binary_component(bitcoin-wallet HAS_MANPAGE)
   endif()
@@ -316,6 +317,7 @@ if(BUILD_DAEMON)
     core_interface
     bitcoin_node
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
+    $<TARGET_NAME_IF_EXISTS:Jemalloc::Jemalloc>
   )
   install_binary_component(bitcoind HAS_MANPAGE)
 endif()
@@ -329,6 +331,7 @@ if(ENABLE_IPC AND BUILD_DAEMON)
     bitcoin_node
     bitcoin_ipc
     $<TARGET_NAME_IF_EXISTS:bitcoin_wallet>
+    $<TARGET_NAME_IF_EXISTS:Jemalloc::Jemalloc>
   )
   install_binary_component(bitcoin-node INTERNAL)
 endif()
@@ -357,6 +360,7 @@ if(BUILD_CLI)
     bitcoin_util
     libevent::core
     libevent::extra
+    $<TARGET_NAME_IF_EXISTS:Jemalloc::Jemalloc>
   )
   install_binary_component(bitcoin-cli HAS_MANPAGE)
 endif()
@@ -371,6 +375,7 @@ if(BUILD_TX)
     bitcoin_common
     bitcoin_util
     univalue
+    $<TARGET_NAME_IF_EXISTS:Jemalloc::Jemalloc>
   )
   install_binary_component(bitcoin-tx HAS_MANPAGE)
 endif()
@@ -384,6 +389,7 @@ if(BUILD_UTIL)
     core_interface
     bitcoin_common
     bitcoin_util
+    $<TARGET_NAME_IF_EXISTS:Jemalloc::Jemalloc>
   )
   install_binary_component(bitcoin-util HAS_MANPAGE)
 endif()
@@ -408,6 +414,7 @@ if(BUILD_KERNEL_LIB)
       PRIVATE
         core_interface
         bitcoinkernel
+        $<TARGET_NAME_IF_EXISTS:Jemalloc::Jemalloc>
     )
     install_binary_component(bitcoin-chainstate INTERNAL)
   endif()
