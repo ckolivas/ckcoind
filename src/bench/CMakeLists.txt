@@ -68,6 +68,7 @@ target_link_libraries(bench_bitcoin
   test_util
   bitcoin_node
   Boost::headers
+  $<TARGET_NAME_IF_EXISTS:Jemalloc::Jemalloc>
 )
 
 if(ENABLE_WALLET)
