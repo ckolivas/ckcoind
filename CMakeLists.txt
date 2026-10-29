@@ -105,7 +105,7 @@ option(BUILD_DAEMON "Build bitcoind executable." ON)
 option(BUILD_GUI "Build bitcoin-qt executable." OFF)
 option(BUILD_CLI "Build bitcoin-cli executable." ON)
 
-option(BUILD_TESTS "Build test_bitcoin and other unit test executables." ON)
+option(BUILD_TESTS "Build test_bitcoin and other unit test executables." OFF)
 option(BUILD_TX "Build bitcoin-tx executable." ${BUILD_TESTS})
 option(BUILD_UTIL "Build bitcoin-util executable." ${BUILD_TESTS})
 cmake_dependent_option(BUILD_GUI_TESTS "Build test_bitcoin-qt executable." ON "BUILD_GUI;BUILD_TESTS" OFF)
@@ -114,7 +114,7 @@ option(BUILD_UTIL_CHAINSTATE "Build experimental bitcoin-chainstate executable."
 option(BUILD_KERNEL_LIB "Build experimental bitcoinkernel library." ${BUILD_UTIL_CHAINSTATE})
 cmake_dependent_option(BUILD_KERNEL_TEST "Build tests for the experimental bitcoinkernel library." ON "BUILD_KERNEL_LIB" OFF)
 
-option(ENABLE_WALLET "Enable wallet." ON)
+option(ENABLE_WALLET "Enable wallet." OFF)
 cmake_dependent_option(BUILD_WALLET_TOOL "Build bitcoin-wallet tool." ${BUILD_TESTS} "ENABLE_WALLET" OFF)
 
 option(ENABLE_EXTERNAL_SIGNER "Enable external signer support." ON)
@@ -123,6 +123,7 @@ cmake_dependent_option(ENABLE_IPC "Build multiprocess bitcoin-node and bitcoin-g
 cmake_dependent_option(WITH_EXTERNAL_LIBMULTIPROCESS "Build with external libmultiprocess library instead of with local git subtree when ENABLE_IPC is enabled. This is not normally recommended, but can be useful for developing libmultiprocess itself." OFF "ENABLE_IPC" OFF)
 option(WITH_EMBEDDED_ASMAP "Embed default ASMap data." ON)
 option(WITH_USDT "Enable tracepoints for Userspace, Statically Defined Tracing." OFF)
+option(WITH_JEMALLOC "Enable jemalloc support." OFF)
 
 cmake_dependent_option(WITH_QRENCODE "Enable QR code support." ON "BUILD_GUI" OFF)
 cmake_dependent_option(WITH_DBUS "Enable DBus support." ON "NOT CMAKE_SYSTEM_NAME MATCHES \"(Windows|Darwin)\" AND BUILD_GUI" OFF)
@@ -252,6 +253,10 @@ endif()
 
 if(WITH_USDT)
   find_package(USDT MODULE REQUIRED)
+endif()
+
+if(WITH_JEMALLOC)
+  find_package(Jemalloc MODULE REQUIRED)
 endif()
 
 if(BUILD_GUI)
@@ -687,6 +692,7 @@ else()
 endif()
 message("  IPC ................................. ${ipc_status}")
 message("  Embedded ASMap ...................... ${WITH_EMBEDDED_ASMAP}")
+message("  jemalloc ............................ ${WITH_JEMALLOC}")
 message("  USDT tracing ........................ ${WITH_USDT}")
 message("  QR code (GUI) ....................... ${WITH_QRENCODE}")
 message("  DBus (GUI) .......................... ${WITH_DBUS}")

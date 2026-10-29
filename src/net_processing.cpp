@@ -1670,6 +1670,13 @@ void PeerManagerImpl::PushNodeVersion(CNode& pnode, const Peer& peer)
         my_user_agent = strSubVersion;
         my_height = m_best_height;
         my_tx_relay = !RejectIncomingTxs(pnode);
+
+        // Only provide full NODE_NETWORK to whitelisted Download peers
+        if (!pnode.HasPermission(NetPermissionFlags::Download)) {
+            my_services &= ~((uint64_t)NODE_NETWORK);
+        } else {
+            LogDebug(BCLog::NET, "Whitelisted incoming Download peer %s\n", addr.ToStringAddrPort());
+        }
     }
 
     MakeAndPushMessage(
@@ -4801,6 +4808,7 @@ void PeerManagerImpl::ProcessMessage(Peer& peer, CNode& pfrom, const std::string
             }
         }
 
+        LogDebug(BCLog::NET, "CMPCTBLOCK message\n");
         CBlockHeaderAndShortTxIDs cmpctblock;
         vRecv >> cmpctblock;
 
@@ -5109,6 +5117,7 @@ void PeerManagerImpl::ProcessMessage(Peer& peer, CNode& pfrom, const std::string
             return;
         }
 
+        LogDebug(BCLog::NET, "BLOCK message\n");
         std::shared_ptr<CBlock> pblock = std::make_shared<CBlock>();
         vRecv >> TX_WITH_WITNESS(*pblock);
 

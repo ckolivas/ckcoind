@@ -171,6 +171,7 @@ target_link_libraries(test_bitcoin
   secp256k1
   Boost::headers
   $<TARGET_NAME_IF_EXISTS:USDT::headers>
+  $<TARGET_NAME_IF_EXISTS:Jemalloc::Jemalloc>
 )
 
 function(add_boost_test source_file)

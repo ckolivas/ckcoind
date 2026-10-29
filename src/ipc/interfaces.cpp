@@ -19,7 +19,9 @@
 #include <cstring>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
+#include <system_error>
 #include <string>
 #include <utility>
 #include <vector>
@@ -114,6 +116,24 @@ public:
     {
         mp::SocketId fd = m_process->bind(gArgs.GetDataDirNet(), m_exe_name, address);
         m_protocol->listen(fd, m_init);
+        if (address.starts_with("unix:")) {
+            const fs::path path{fs::PathFromString(address.substr(5))};
+            std::lock_guard<std::mutex> lock(m_listen_mutex);
+            if (m_listen_stopped) {
+                RemoveListenPath(path);
+            } else {
+                m_listen_paths.push_back(path);
+            }
+        }
+    }
+    void stopListening() override
+    {
+        std::lock_guard<std::mutex> lock(m_listen_mutex);
+        m_listen_stopped = true;
+        for (const fs::path& path : m_listen_paths) {
+            RemoveListenPath(path);
+        }
+        m_listen_paths.clear();
     }
     void disconnectIncoming() override
     {
@@ -124,11 +144,26 @@ public:
         m_protocol->addCleanup(type, iface, std::move(cleanup));
     }
     Context& context() override { return m_protocol->context(); }
+    static void RemoveListenPath(const fs::path& path)
+    {
+        // Only remove the path if it is still a socket, mirroring the check in
+        // ProcessImpl::bind() before it removes a stale socket.
+        std::error_code ec;
+        if (fs::symlink_status(path, ec).type() == fs::file_type::socket && fs::remove(path, ec)) {
+            LogInfo("Stopped listening for IPC requests on address unix:%s", fs::PathToString(path));
+        } else if (ec) {
+            LogWarning("Unable to remove IPC socket %s: %s", fs::quoted(fs::PathToString(path)), ec.message());
+        }
+    }
     const char* m_exe_name;
     const char* m_process_argv0;
     interfaces::Init& m_init;
     std::unique_ptr<Protocol> m_protocol;
     std::unique_ptr<Process> m_process;
+    std::mutex m_listen_mutex;
+    //! Unix socket paths bound by listenAddress(), removed by stopListening().
+    std::vector<fs::path> m_listen_paths;
+    bool m_listen_stopped{false};
 };
 } // namespace
 } // namespace ipc

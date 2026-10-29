@@ -32,12 +32,20 @@ static constexpr uint64_t MAX_TXOSPENDER_INDEX_CACHE{1_GiB};
 static constexpr uint64_t HIGH_DEFAULT_DBCACHE{1_GiB};
 //! Minimum detected RAM required for HIGH_DEFAULT_DBCACHE.
 static constexpr uint64_t HIGH_DEFAULT_DBCACHE_MIN_TOTAL_RAM{4_GiB};
+//! CKCoinD: default dbcache on 64-bit systems with plenty of RAM.
+static constexpr uint64_t CK_DEFAULT_DBCACHE{4_GiB};
+//! Minimum detected RAM required for CK_DEFAULT_DBCACHE (keeps it below the oversized dbcache warning).
+static constexpr uint64_t CK_DEFAULT_DBCACHE_MIN_TOTAL_RAM{8_GiB};
 
 namespace node {
 uint64_t GetDefaultDBCache()
 {
     if constexpr (sizeof(void*) >= 8) {
-        if (TryGetTotalRam().value_or(0) >= HIGH_DEFAULT_DBCACHE_MIN_TOTAL_RAM) {
+        const uint64_t total_ram{TryGetTotalRam().value_or(0)};
+        if (total_ram >= CK_DEFAULT_DBCACHE_MIN_TOTAL_RAM) {
+            return CK_DEFAULT_DBCACHE;
+        }
+        if (total_ram >= HIGH_DEFAULT_DBCACHE_MIN_TOTAL_RAM) {
             return HIGH_DEFAULT_DBCACHE;
         }
     }

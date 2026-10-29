@@ -72,6 +72,11 @@ public:
     //! clients. Throws an exception if there was an error.
     virtual void listenAddress(std::string& address) = 0;
 
+    //! Stop accepting new incoming connections by removing the socket paths
+    //! bound by listenAddress(), so clients cannot reconnect during shutdown.
+    //! Existing connections are left up until disconnectIncoming() is called.
+    virtual void stopListening() = 0;
+
     //! Disconnect any incoming connections that are still connected.
     virtual void disconnectIncoming() = 0;
 

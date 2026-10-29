@@ -65,6 +65,9 @@ Compile with `-DENABLE_IPC=OFF` if you do not need IPC functionality.
 
 ZMQ-enabled binaries are compiled with `-DWITH_ZMQ=ON` and require libzmq.
 
+jemalloc-enabled binaries are compiled with `-DWITH_JEMALLOC=ON` and require the jemalloc
+development package (e.g. `libjemalloc-dev` on Debian/Ubuntu).
+
 User-Space, Statically Defined Tracing (USDT) requires the systemtap-sdt
 development package and must be enabled via `-DWITH_USDT=ON`.
 

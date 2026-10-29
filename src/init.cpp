@@ -286,6 +286,13 @@ static void ShutdownNotify(const ArgsManager& args)
 
 void Interrupt(NodeContext& node)
 {
+    // Stop accepting -ipcbind connections before anything else so IPC clients
+    // cannot reconnect after disconnectIncoming() in Shutdown() and hold the
+    // capnp event loop open, which would keep the process from exiting.
+    // Existing connections stay up until disconnectIncoming().
+    if (node.init) {
+        if (interfaces::Ipc* ipc = node.init->ipc()) ipc->stopListening();
+    }
 #if HAVE_SYSTEM
     ShutdownNotify(*node.args);
 #endif

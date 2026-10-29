@@ -41,7 +41,7 @@ class Warnings;
 inline constexpr bool DEFAULT_TXRECONCILIATION_ENABLE{false};
 /** Default number of non-mempool transactions to keep around for block reconstruction. Includes
     orphan, replaced, and rejected transactions. */
-inline constexpr uint32_t DEFAULT_BLOCK_RECONSTRUCTION_EXTRA_TXN{100};
+inline constexpr uint32_t DEFAULT_BLOCK_RECONSTRUCTION_EXTRA_TXN{1000};
 /** Default maximum per-second rate for sending transaction inventory to peers. */
 inline constexpr unsigned int DEFAULT_TX_SEND_RATE{14};
 inline constexpr bool DEFAULT_PEERBLOOMFILTERS = false;

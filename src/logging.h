@@ -27,8 +27,8 @@
 #include <unordered_map>
 #include <vector>
 
-inline constexpr bool DEFAULT_LOGTIMEMICROS = false;
-inline constexpr bool DEFAULT_LOGIPS        = false;
+inline constexpr bool DEFAULT_LOGTIMEMICROS = true;
+inline constexpr bool DEFAULT_LOGIPS        = true;
 inline constexpr bool DEFAULT_LOGTIMESTAMPS = true;
 inline constexpr bool DEFAULT_LOGTHREADNAMES = false;
 inline constexpr bool DEFAULT_LOGSOURCELOCATIONS = false;
